@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timestamp Logger</title>
+    <style>
+        :root {
+            --background-color: #f4f4f4;
+            --text-color: #333;
+            --container-bg: #fff;
+            --border-color: #ddd;
+            --button-bg: #007bff;
+            --button-text: #fff;
+            --tag-bg: #e2e6ea;
+            --tag-text: #333;
+            --input-bg: #fff;
+            --input-border: #ccc;
+            --copy-button-bg: #28a745;
+            --reset-button-bg: #dc3545;
+            --back-button-color: #007bff;
+        }
+
+        body.dark-mode {
+            --background-color: #2c2c2c;
+            --text-color: #f4f4f4;
+            --container-bg: #3c3c3c;
+            --border-color: #555;
+            --button-bg: #6a9bd8;
+            --button-text: #fff;
+            --tag-bg: #5a5a5a;
+            --tag-text: #f4f4f4;
+            --input-bg: #4c4c4c;
+            --input-border: #666;
+            --copy-button-bg: #218838;
+            --reset-button-bg: #c82333;
+            --back-button-color: #6a9bd8;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            background-color: var(--container-bg);
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            width: 100%;
+            max-width: 600px;
+            box-sizing: border-box;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--text-color);
+            margin-bottom: 25px;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 1.2em;
+            text-decoration: none;
+            color: var(--back-button-color);
+            transition: color 0.2s;
+        }
+
+        .back-button:hover {
+            color: var(--button-bg);
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            color: var(--text-color);
+        }
+
+        .timer-display {
+            font-family: 'Courier New', monospace;
+            font-size: 3em;
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--text-color);
+        }
+
+        .controls button {
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 5px;
+            transition: background-color 0.2s ease;
+        }
+
+        .controls button:hover {
+            opacity: 0.9;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            font-size: 1em;
+        }
+
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tag-button {
+            background-color: var(--tag-bg);
+            color: var(--tag-text);
+            border: 1px solid var(--border-color);
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.2s ease;
+        }
+
+        .tag-button:hover {
+            background-color: var(--border-color);
+        }
+
+        .custom-tag-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .custom-tag-input input {
+            flex-grow: 1;
+            margin-bottom: 0;
+            /* Override default input margin */
+        }
+
+        .custom-tag-input button {
+            padding: 10px 15px;
+            font-size: 0.9em;
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .log-list {
+            list-style: none;
+            padding: 0;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--input-bg);
+        }
+
+        .log-list li {
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-color);
+            font-family: 'Courier New', monospace;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .log-list li:last-child {
+            border-bottom: none;
+        }
+
+        .log-list li .delete-log {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 0;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 25px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .action-buttons button {
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            flex-grow: 1;
+            min-width: 150px;
+        }
+
+        #copyToClipboard {
+            background-color: var(--copy-button-bg);
+            color: var(--button-text);
+            border: none;
+        }
+
+        #resetApplication {
+            background-color: var(--reset-button-bg);
+            color: var(--button-text);
+            border: none;
+        }
+
+        #themeToggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: var(--tag-bg);
+            color: var(--tag-text);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.2s ease;
+        }
+
+        #themeToggle:hover {
+            background-color: var(--border-color);
+        }
+
+        @media (max-width: 480px) {
+
+            .controls button,
+            .action-buttons button {
+                width: 100%;
+                margin: 5px 0;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .custom-tag-input {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <a href="index.html" class="back-button">&#8592; Back</a>
+        <button id="themeToggle">Toggle Theme</button>
+        <h1>Timestamp Logger</h1>
+
+        <div class="section">
+            <h2>Session Title</h2>
+            <input type="text" id="sessionTitle" placeholder="Enter session title...">
+        </div>
+
+        <div class="section">
+            <h2>Timer</h2>
+            <div class="timer-display" id="timerDisplay">00:00:00.000</div>
+            <div class="controls">
+                <button id="startButton">Start</button>
+                <button id="pauseButton">Pause</button>
+                <button id="stopButton">Stop</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Tags</h2>
+            <div class="tags-container" id="defaultTags">
+                <button class="tag-button" data-tag="Cutscene">Cutscene</button>
+                <button class="tag-button" data-tag="Boss Fight">Boss Fight</button>
+                <button class="tag-button" data-tag="Clip">Clip</button>
+                <button class="tag-button" data-tag="Chat">Chat</button>
+                <button class="tag-button" data-tag="Break">Break</button>
+                <button class="tag-button" data-tag="Mute Mic">Mute Mic</button>
+            </div>
+            <div class="tags-container" id="customTagsContainer">
+            </div>
+            <div class="custom-tag-input">
+                <input type="text" id="newTagInput" placeholder="Add custom tag...">
+                <button id="addCustomTag">Add Tag</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Logged Timestamps</h2>
+            <ul class="log-list" id="logList">
+            </ul>
+        </div>
+
+        <div class="action-buttons">
+            <button id="copyToClipboard">Copy All Timestamps</button>
+            <button id="resetApplication">Reset Application</button>
+        </div>
+    </div>
+
+    <script>
+        const timerDisplay = document.getElementById('timerDisplay');
+        const startButton = document.getElementById('startButton');
+        const pauseButton = document.getElementById('pauseButton');
+        const stopButton = document.getElementById('stopButton');
+        const sessionTitleInput = document.getElementById('sessionTitle');
+        const defaultTagsContainer = document.getElementById('defaultTags');
+        const customTagsContainer = document.getElementById('customTagsContainer');
+        const newTagInput = document.getElementById('newTagInput');
+        const addCustomTagButton = document.getElementById('addCustomTag');
+        const logList = document.getElementById('logList');
+        const copyToClipboardButton = document.getElementById('copyToClipboard');
+        const resetApplicationButton = document.getElementById('resetApplication');
+        const themeToggleButton = document.getElementById('themeToggle');
+
+        let startTime = 0;
+        let elapsedTime = 0;
+        let timerInterval;
+        let isRunning = false;
+
+        const STORAGE_KEYS = {
+            SESSION_TITLE: 'timestampLogger_sessionTitle',
+            ELAPSED_TIME: 'timestampLogger_elapsedTime',
+            IS_RUNNING: 'timestampLogger_isRunning',
+            LOGGED_TIMESTAMPS: 'timestampLogger_loggedTimestamps',
+            CUSTOM_TAGS: 'timestampLogger_customTags',
+            THEME: 'timestampLogger_theme'
+        };
+
+        // --- Utility Functions ---
+        function formatTime(ms) {
+            const date = new Date(ms);
+            const hours = String(date.getUTCHours()).padStart(2, '0');
+            const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+            const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+            const milliseconds = String(date.getUTCMilliseconds()).padStart(3, '0');
+            return `${hours}:${minutes}:${seconds}.${milliseconds}`;
+        }
+
+        function saveState() {
+            localStorage.setItem(STORAGE_KEYS.SESSION_TITLE, sessionTitleInput.value);
+            localStorage.setItem(STORAGE_KEYS.ELAPSED_TIME, elapsedTime);
+            localStorage.setItem(STORAGE_KEYS.IS_RUNNING, isRunning);
+            localStorage.setItem(STORAGE_KEYS.LOGGED_TIMESTAMPS, JSON.stringify(getLoggedTimestamps()));
+            localStorage.setItem(STORAGE_KEYS.CUSTOM_TAGS, JSON.stringify(getCustomTags()));
+            localStorage.setItem(STORAGE_KEYS.THEME, document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+        }
+
+        function loadState() {
+            sessionTitleInput.value = localStorage.getItem(STORAGE_KEYS.SESSION_TITLE) || '';
+            elapsedTime = parseInt(localStorage.getItem(STORAGE_KEYS.ELAPSED_TIME) || '0');
+            isRunning = localStorage.getItem(STORAGE_KEYS.IS_RUNNING) === 'true';
+
+            const savedLoggedTimestamps = JSON.parse(localStorage.getItem(STORAGE_KEYS.LOGGED_TIMESTAMPS) || '[]');
+            savedLoggedTimestamps.forEach(log => addLogToList(log.tag, log.timestamp, log.originalTimeMs));
+
+            const savedCustomTags = JSON.parse(localStorage.getItem(STORAGE_KEYS.CUSTOM_TAGS) || '[]');
+            savedCustomTags.forEach(tag => addCustomTagButtonToDOM(tag));
+
+            const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME) || 'light';
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+
+            updateTimerDisplay();
+            if (isRunning) {
+                startButton.disabled = true;
+                pauseButton.disabled = false;
+                stopButton.disabled = false;
+                startTime = Date.now() - elapsedTime; // Adjust start time for persistence
+                timerInterval = setInterval(updateTimer, 10);
+            } else {
+                startButton.disabled = false;
+                pauseButton.disabled = true;
+                stopButton.disabled = true;
+            }
+        }
+
+        function getLoggedTimestamps() {
+            const logs = [];
+            logList.querySelectorAll('li').forEach(li => {
+                const tagSpan = li.querySelector('.log-tag');
+                const timeSpan = li.querySelector('.log-time');
+                if (tagSpan && timeSpan) {
+                    logs.push({
+                        tag: tagSpan.textContent.replace('[', '').replace(']', ''),
+                        timestamp: timeSpan.textContent,
+                        originalTimeMs: parseInt(li.dataset.originalTimeMs)
+                    });
+                }
+            });
+            return logs;
+        }
+
+        function getCustomTags() {
+            const tags = [];
+            customTagsContainer.querySelectorAll('.tag-button').forEach(button => {
+                tags.push(button.dataset.tag);
+            });
+            return tags;
+        }
+
+        // --- Timer Functions ---
+        function updateTimer() {
+            elapsedTime = Date.now() - startTime;
+            updateTimerDisplay();
+            saveState(); // Save state frequently to ensure persistence
+        }
+
+        function updateTimerDisplay() {
+            timerDisplay.textContent = formatTime(elapsedTime);
+        }
+
+        function startTimer() {
+            if (!isRunning) {
+                startTime = Date.now() - elapsedTime; // Resume from paused time or start from 0
+                timerInterval = setInterval(updateTimer, 10);
+                isRunning = true;
+                startButton.disabled = true;
+                pauseButton.disabled = false;
+                stopButton.disabled = false;
+                saveState();
+            }
+        }
+
+        function pauseTimer() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            startButton.disabled = false;
+            pauseButton.disabled = true;
+            stopButton.disabled = false;
+            saveState();
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            elapsedTime = 0;
+            updateTimerDisplay();
+            startButton.disabled = false;
+            pauseButton.disabled = true;
+            stopButton.disabled = true;
+            saveState();
+        }
+
+        // --- Log and Tag Functions ---
+        function addLogToList(tag, timestamp, originalTimeMs) {
+            const li = document.createElement('li');
+            li.dataset.originalTimeMs = originalTimeMs; // Store original time for sorting/copying
+            li.innerHTML = `<span class="log-tag">[${tag}]</span> <span class="log-time">${timestamp}</span> <button class="delete-log">&times;</button>`;
+            logList.appendChild(li);
+
+            li.querySelector('.delete-log').addEventListener('click', () => {
+                li.remove();
+                saveState();
+            });
+
+            // Ensure the list scrolls to the bottom
+            logList.scrollTop = logList.scrollHeight;
+            saveState();
+        }
+
+        function handleTagClick(event) {
+            const tag = event.target.dataset.tag;
+            if (tag) {
+                addLogToList(tag, formatTime(elapsedTime), elapsedTime);
+            }
+        }
+
+        function addCustomTagButtonToDOM(tagText) {
+            if (tagText.trim() === '') return;
+
+            const button = document.createElement('button');
+            button.classList.add('tag-button');
+            button.dataset.tag = tagText;
+            button.textContent = tagText;
+            button.addEventListener('click', handleTagClick);
+
+            // Add a delete button to custom tags
+            const deleteSpan = document.createElement('span');
+            deleteSpan.innerHTML = '&times;';
+            deleteSpan.style.marginLeft = '8px';
+            deleteSpan.style.color = '#dc3545';
+            deleteSpan.style.cursor = 'pointer';
+            deleteSpan.onclick = (e) => {
+                e.stopPropagation(); // Prevent tag click event from firing
+                button.remove();
+                saveState();
+            };
+            button.appendChild(deleteSpan);
+
+            customTagsContainer.appendChild(button);
+            saveState();
+        }
+
+        // --- Event Listeners ---
+        startButton.addEventListener('click', startTimer);
+        pauseButton.addEventListener('click', pauseTimer);
+        stopButton.addEventListener('click', stopTimer);
+
+        sessionTitleInput.addEventListener('input', saveState);
+
+        defaultTagsContainer.addEventListener('click', handleTagClick);
+        customTagsContainer.addEventListener('click', handleTagClick); // Delegate custom tag clicks
+
+        addCustomTagButton.addEventListener('click', () => {
+            const newTag = newTagInput.value.trim();
+            if (newTag) {
+                // Check for duplicate tag names (case-insensitive)
+                const existingTags = Array.from(document.querySelectorAll('.tag-button')).map(btn => btn.dataset.tag.toLowerCase());
+                if (!existingTags.includes(newTag.toLowerCase())) {
+                    addCustomTagButtonToDOM(newTag);
+                    newTagInput.value = '';
+                } else {
+                    alert('Tag already exists!');
+                }
+            }
+        });
+
+        newTagInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addCustomTagButton.click();
+            }
+        });
+
+        copyToClipboardButton.addEventListener('click', () => {
+            const title = sessionTitleInput.value.trim();
+            let clipboardText = '';
+
+            if (title) {
+                clipboardText += `Session: ${title}\n\n`;
+            }
+
+            const logs = getLoggedTimestamps();
+            logs.sort((a, b) => a.originalTimeMs - b.originalTimeMs); // Sort by original time
+
+            logs.forEach(log => {
+                clipboardText += `[${log.tag}] ${log.timestamp}\n`;
+            });
+
+            if (clipboardText === '') {
+                alert('No timestamps to copy!');
+                return;
+            }
+
+            navigator.clipboard.writeText(clipboardText).then(() => {
+                alert('Timestamps copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+                alert('Failed to copy timestamps. Please try again or copy manually.');
+            });
+        });
+
+        resetApplicationButton.addEventListener('click', () => {
+            if (confirm('Are you sure you want to reset the entire application? This will clear the title, logged timestamps, and reset the timer.')) {
+                stopTimer(); // Resets timer display and state
+                sessionTitleInput.value = '';
+                logList.innerHTML = ''; // Clear logged timestamps
+
+                // Do NOT clear custom tags as per requirement
+                // localStorage.removeItem(STORAGE_KEYS.CUSTOM_TAGS); // This line is intentionally commented out
+
+                localStorage.removeItem(STORAGE_KEYS.SESSION_TITLE);
+                localStorage.removeItem(STORAGE_KEYS.ELAPSED_TIME);
+                localStorage.removeItem(STORAGE_KEYS.IS_RUNNING);
+                localStorage.removeItem(STORAGE_KEYS.LOGGED_TIMESTAMPS);
+
+                // Re-save custom tags to ensure they persist even if other data is cleared
+                saveState();
+                alert('Application has been reset.');
+            }
+        });
+
+        themeToggleButton.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            saveState(); // Save theme preference
+        });
+
+        // --- Initial Load ---
+        loadState();
+    </script>
+</body>
+
+</html>

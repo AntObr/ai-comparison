@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Timestamp Logger</title>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #000000;
+            --accent: #007bff;
+        }
+
+        body.dark {
+            --bg: #121212;
+            --text: #ffffff;
+            --accent: #66ccff;
+        }
+
+        body {
+            font-family: sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 1rem;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        header button {
+            background: none;
+            border: none;
+            color: var(--accent);
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        h1 input {
+            font-size: 1.5rem;
+            border: none;
+            border-bottom: 2px solid var(--accent);
+            background: transparent;
+            color: var(--text);
+        }
+
+        .timer-controls,
+        .tags,
+        .custom-tag,
+        .logs,
+        .actions {
+            margin-top: 1.5rem;
+        }
+
+        .timer {
+            font-size: 2rem;
+            margin-top: 0.5rem;
+        }
+
+        button {
+            margin: 0.25rem;
+            padding: 0.5rem 1rem;
+            border: none;
+            background: var(--accent);
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        input[type="text"] {
+            padding: 0.5rem;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            margin: 0.25rem 0;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <button onclick="location.href='index.html'">⬅ Back</button>
+        <h1><input id="sessionTitle" placeholder="Session Title" /></h1>
+    </header>
+
+    <div class="timer-controls">
+        <div class="timer" id="timerDisplay">00:00.000</div>
+        <button onclick="startTimer()">Start</button>
+        <button onclick="pauseTimer()">Pause</button>
+        <button onclick="resetTimer()">Stop</button>
+    </div>
+
+    <div class="tags">
+        <h3>Tags</h3>
+        <div id="tagButtons"></div>
+    </div>
+
+    <div class="custom-tag">
+        <input id="newTag" placeholder="Add custom tag" />
+        <button onclick="addCustomTag()">Add Tag</button>
+    </div>
+
+    <div class="logs">
+        <h3>Timestamp Logs</h3>
+        <ul id="logList"></ul>
+    </div>
+
+    <div class="actions">
+        <button onclick="copyLogs()">Copy Logs</button>
+        <button onclick="resetAll()">Reset All</button>
+        <button onclick="toggleTheme()">Toggle Theme</button>
+    </div>
+
+    <script>
+        let timer = 0;
+        let interval = null;
+        let running = false;
+        const logList = document.getElementById("logList");
+        const timerDisplay = document.getElementById("timerDisplay");
+        const sessionTitle = document.getElementById("sessionTitle");
+
+        const defaultTags = ["Cutscene", "Boss Fight", "Clip", "Chat", "Break", "Mute Mic"];
+
+        function formatTime(ms) {
+            const totalSeconds = Math.floor(ms / 1000);
+            const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+            const seconds = String(totalSeconds % 60).padStart(2, '0');
+            const milliseconds = String(ms % 1000).padStart(3, '0');
+            return `${minutes}:${seconds}.${milliseconds}`;
+        }
+
+        function updateTimerDisplay() {
+            timerDisplay.textContent = formatTime(timer);
+        }
+
+        function tick() {
+            timer += 10;
+            updateTimerDisplay();
+            localStorage.setItem('timestamp-timer', timer);
+        }
+
+        function startTimer() {
+            if (!running) {
+                interval = setInterval(tick, 10);
+                running = true;
+            }
+        }
+
+        function pauseTimer() {
+            clearInterval(interval);
+            running = false;
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            timer = 0;
+            updateTimerDisplay();
+            localStorage.setItem('timestamp-timer', 0);
+        }
+
+        function logTag(tag) {
+            const timeStr = formatTime(timer);
+            const li = document.createElement("li");
+            li.textContent = `[${timeStr}] ${tag}`;
+            logList.appendChild(li);
+            saveLogs();
+        }
+
+        function addCustomTag() {
+            const tagInput = document.getElementById("newTag");
+            const tag = tagInput.value.trim();
+            if (tag && !customTags.includes(tag)) {
+                customTags.push(tag);
+                tagInput.value = "";
+                saveCustomTags();
+                renderTags();
+            }
+        }
+
+        function renderTags() {
+            const container = document.getElementById("tagButtons");
+            container.innerHTML = "";
+            [...defaultTags, ...customTags].forEach(tag => {
+                const btn = document.createElement("button");
+                btn.textContent = tag;
+                btn.onclick = () => logTag(tag);
+                container.appendChild(btn);
+            });
+        }
+
+        function saveLogs() {
+            const logs = [...logList.children].map(li => li.textContent);
+            localStorage.setItem("timestamp-logs", JSON.stringify(logs));
+        }
+
+        function loadLogs() {
+            const logs = JSON.parse(localStorage.getItem("timestamp-logs") || "[]");
+            logs.forEach(log => {
+                const li = document.createElement("li");
+                li.textContent = log;
+                logList.appendChild(li);
+            });
+        }
+
+        function copyLogs() {
+            const title = sessionTitle.value || "Untitled Session";
+            const logs = [...logList.children].map(li => li.textContent).join("\n");
+            const fullText = `${title}\n\n${logs}`;
+            navigator.clipboard.writeText(fullText);
+        }
+
+        function resetAll() {
+            if (confirm("Are you sure you want to reset everything?")) {
+                resetTimer();
+                logList.innerHTML = "";
+                localStorage.clear();
+                sessionTitle.value = "";
+                customTags = [];
+                renderTags();
+            }
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle("dark");
+            localStorage.setItem("timestamp-theme", document.body.classList.contains("dark") ? "dark" : "light");
+        }
+
+        let customTags = JSON.parse(localStorage.getItem("timestamp-customTags") || "[]");
+
+        function saveCustomTags() {
+            localStorage.setItem("timestamp-customTags", JSON.stringify(customTags));
+        }
+
+        function loadTheme() {
+            const theme = localStorage.getItem("timestamp-theme") || "light";
+            if (theme === "dark") {
+                document.body.classList.add("dark");
+            }
+        }
+
+        function restoreState() {
+            timer = parseInt(localStorage.getItem('timestamp-timer')) || 0;
+            updateTimerDisplay();
+            sessionTitle.value = localStorage.getItem("timestamp-title") || "";
+            loadLogs();
+            renderTags();
+            loadTheme();
+        }
+
+        sessionTitle.addEventListener("input", () => {
+            localStorage.setItem("timestamp-title", sessionTitle.value);
+        });
+
+        restoreState();
+    </script>
+</body>
+
+</html>
